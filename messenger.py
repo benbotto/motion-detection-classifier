@@ -24,37 +24,45 @@ channel.queue_declare(queue=os.environ['MQ_SAVE_QUEUE'])
 # MotionRecording entity (see the motion-detection-api).  The entity
 # has a video file name, which is classified.
 def on_message_received(channel, method_frame, header_frame, body):
-  print('Received a message.')
-  print(body)
   recording = json.loads(body)['data']
-  print(recording)
 
   # Classify the video.
+  print('Classifying {}'.format(recording['fileName']))
+
   classifications = classifier.classify(
     os.environ['VIDEO_DIR'] + '/' + recording['fileName'])
 
-  print(classifications)
+  num_objects = len(classifications)
+  print('Found {} objects of interest.'.format(num_objects))
 
   # Acknowledge the message.
   channel.basic_ack(delivery_tag=method_frame.delivery_tag)
 
-  # Respond to the API server.
-  '''
-  resp = {
-    'pattern': 'save_classifications',
-    'data': {
-      'id': recording['id'],
-      'classifications': [
-        {
-          'class': 'person',
-          'confidence': 98.6,
-          'frame': 1
-        }
-      ]
-    }
-  };
-  channel.basic_publish(exchange='', routing_key='save_classifications_queue', body=json.dumps(resp))
-  '''
+  # The recording is saved if there are objects of interest, or deleted
+  # otherwise.
+  if num_objects > 0:
+    # The motion recording ID is expected on each classification (the
+    # classifications are saved in the DB on the API side).
+    for classification in classifications:
+      classification['motionRecordingId'] = recording['id']
+
+    # Respond to the API server with the classifications.
+    resp = {
+      'pattern': 'save_classifications',
+      'data': classifications
+    };
+
+    channel.basic_publish(exchange='', routing_key=os.environ['MQ_SAVE_QUEUE'],
+      body=json.dumps(resp))
+  else:
+    # Respond to the API server with the recording id so it can be deleted.
+    resp = {
+      'pattern': 'delete_motion_recording',
+      'data': recording
+    };
+
+    channel.basic_publish(exchange='', routing_key=os.environ['MQ_SAVE_QUEUE'],
+      body=json.dumps(resp))
 
 # Wire up the message listener.
 channel.basic_consume(queue='classify_recordings_queue', on_message_callback=on_message_received)
