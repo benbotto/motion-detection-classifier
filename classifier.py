@@ -67,6 +67,10 @@ class Classifier:
                 'frame': frame_num
               })
 
+              # Early out.  If there is even one frame of interest, then the
+              # video is kept.
+              return classifications
+
       has_frame, frame = cap.read()
       frame_num = frame_num + 1
 
