@@ -11,8 +11,9 @@ classifier = Classifier(
   frame_skip = int(os.environ['FRAME_SKIP']))
 
 # Connect to rabbitmq (the container name is "mq").
-connection = pika.BlockingConnection(pika.URLParameters(os.environ['MQ_CONNECTION_STRING']))
-channel    = connection.channel()
+mq_conn_str = 'amqp://{}:{}'.format(os.environ['MQ_HOST'], os.environ['MQ_PORT'])
+connection  = pika.BlockingConnection(pika.URLParameters(mq_conn_str))
+channel     = connection.channel()
 
 # Create the queues if they have not already been created.
 # The API server publishes messages on the first queue.
