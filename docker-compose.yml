@@ -11,7 +11,7 @@ services:
     stdin_open: true
     tty: true
     env_file:
-      - docker/dev/motion-detection-classifier.env
+      - docker/motion-detection-classifier.env
     environment:
       - SHELL=/bin/bash
 networks:
