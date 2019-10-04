@@ -8,7 +8,10 @@ from classifier import Classifier
 classifier = Classifier(
   det_threshold = float(os.environ['DET_THRESHOLD']),
   classes_of_interest = json.loads(os.environ['CLASSES_OF_INTEREST']),
-  frame_skip = int(os.environ['FRAME_SKIP']))
+  frame_skip = int(os.environ['FRAME_SKIP']),
+  model_file = os.environ['NET_MODEL_FILE'],
+  config_file = os.environ['NET_CONFIG_FILE'],
+  classes_file = os.environ['NET_CLASSES_FILE'])
 
 # Connect to rabbitmq (the container name is "mq").
 mq_conn_str = 'amqp://{}:{}'.format(os.environ['MQ_HOST'], os.environ['MQ_PORT'])
