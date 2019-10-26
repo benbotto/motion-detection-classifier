@@ -1,8 +1,6 @@
 #!/bin/bash
 
-docker rmi avejidah/python3-opencv-rabbitmq-dev
 docker build \
-  --no-cache \
-  -t avejidah/python3-opencv-rabbitmq-dev .
+  -t avejidah/python3-opencv4-rabbitmq-tensorflow2-dev .
 
-docker push avejidah/python3-opencv-rabbitmq-dev:latest
+docker push avejidah/python3-opencv4-rabbitmq-tensorflow2-dev:latest
