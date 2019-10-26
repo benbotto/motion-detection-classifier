@@ -10,7 +10,6 @@ classifier = Classifier(
   classes_of_interest = json.loads(os.environ['CLASSES_OF_INTEREST']),
   frame_skip = int(os.environ['FRAME_SKIP']),
   model_file = os.environ['NET_MODEL_FILE'],
-  config_file = os.environ['NET_CONFIG_FILE'],
   classes_file = os.environ['NET_CLASSES_FILE'])
 
 # Connect to rabbitmq (the container name is "mq").
