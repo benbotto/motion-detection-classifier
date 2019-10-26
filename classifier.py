@@ -43,11 +43,11 @@ class Classifier:
     # Read one frame at a time.
     has_frame, frame = cap.read()
 
-    '''
     while has_frame:
       # Frames are skipped for efficiency.
       if frame_num % self._frame_skip == 0:
-        # Convert the frame to a batch (TODO: send multiple frames).
+        # Convert the frame to a batch (this classifies one frame at a time due
+        # to the Nano's video memory size).
         frame = tf.expand_dims(frame, 0)
 
         # Yolov3 works with 416x416 images.
@@ -64,7 +64,7 @@ class Classifier:
           class_name = self._classes[class_id]
           confidence = scores[0][i]
 
-          print('Frame Num: {} Class: {} Score: {:.4f}'.format(frame_num, class_name, confidence))
+          #print('Frame Num: {} Class: {} Score: {:.4f}'.format(frame_num, class_name, confidence))
 
           if class_name in self._classes_of_interest and confidence > self._det_threshold:
             classifications.append({
@@ -75,39 +75,9 @@ class Classifier:
 
             # Early out.  If there is even one frame of interest, then the
             # video is kept.
-            #return classifications
+            return classifications
 
       has_frame, frame = cap.read()
       frame_num = frame_num + 1
-    '''
-
-    frames = []
-    while has_frame:
-      # Frames are skipped for efficiency.
-      if frame_num % self._frame_skip == 0:
-        frames.append(frame)
-
-      has_frame, frame = cap.read()
-      frame_num = frame_num + 1
-
-    # Convert the frames to a numpy array so they can be fed through the network.
-    frames = np.array(frames);
-
-    # Yolov3 works with 416x416 images.
-    frames = tf.image.resize(frames, (416, 416))
-
-    # The pixels should be in the range 0-1 (not 0-255).
-    frames = frames / 255
-
-    # Run the frame through the network.
-    boxes, scores, classes, nums = self._net.predict(frames)
-
-    for i in range(len(frames)):
-      for j in range(nums[i]):
-        class_id = int(classes[i][j])
-        class_name = self._classes[class_id]
-        confidence = scores[i][j]
-
-        print('Frame num: {} Class: {} Score: {:.4f}'.format(i, class_name, confidence))
 
     return classifications
