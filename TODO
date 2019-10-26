@@ -1,3 +1,5 @@
 When building for prod, pull and convert the weights file.
 
 Get rid of video dir.
+
+Get rid of (or update) prod docker folder.
