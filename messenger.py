@@ -1,8 +1,10 @@
 import os
 import pika
 import json
+from threading import Thread
 
 from classifier import Classifier
+from classifier_container import ClassifierContainer
 
 # This class is used to classify (detect objects in) the videos.
 classifier = Classifier(
@@ -29,13 +31,23 @@ channel.queue_declare(queue=os.environ['MQ_SAVE_QUEUE'])
 def on_message_received(channel, method_frame, header_frame, body):
   recording = json.loads(body)['data']
 
-  # Classify the video.
+  # Classify the video in a thread.  A wrapper container is used to hold the
+  # classifications.
   print('Classifying {}'.format(recording['fileName']))
 
-  classifications = classifier.classify(
-    os.environ['VIDEO_DIR'] + '/' + recording['fileName'])
+  container = ClassifierContainer(classifier)
 
-  num_objects = len(classifications)
+  thread = Thread(target = lambda: container.classify(
+    os.environ['VIDEO_DIR'] + '/' + recording['fileName']))
+  thread.start()
+
+  # Let pika sleep until the classification is done.  RabbitMQ sends heartbeats
+  # to check if the client is alive, and this ensures that pika responds during
+  # the long-running classification process.
+  while thread.is_alive():
+    connection.sleep(1)
+
+  num_objects = len(container.classifications)
   print('Found {} objects of interest.'.format(num_objects))
 
   # Acknowledge the message.
@@ -46,13 +58,13 @@ def on_message_received(channel, method_frame, header_frame, body):
   if num_objects > 0:
     # The motion recording ID is expected on each classification (the
     # classifications are saved in the DB on the API side).
-    for classification in classifications:
+    for classification in container.classifications:
       classification['motionRecordingId'] = recording['id']
 
     # Respond to the API server with the classifications.
     resp = {
       'pattern': 'save_classifications',
-      'data': classifications
+      'data': container.classifications
     };
 
     channel.basic_publish(exchange='', routing_key=os.environ['MQ_SAVE_QUEUE'],
